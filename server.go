@@ -119,7 +119,7 @@ func (s *Server) GetListenAddr() net.Addr {
 func (s *Server) ConnectToPeer(peerId int, addr net.Addr) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.peerClients[peerId] != nil {
+	if s.peerClients[peerId] == nil {
 		client, err := rpc.Dial(addr.Network(), addr.String())
 		if err != nil {
 			return err
