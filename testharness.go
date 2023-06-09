@@ -31,6 +31,7 @@ func NewHarness(t *testing.T, n int) *Harness {
 	ns := make([]*Server, n)
 	connected := make([]bool, n)
 	ready := make(chan interface{})
+	commitChans := make([]chan CommitEntry, n)
 
 	// Create all Servers in this cluster, assign ids and peer ids.
 	for i := 0; i < n; i++ {
@@ -41,7 +42,7 @@ func NewHarness(t *testing.T, n int) *Harness {
 			}
 		}
 
-		ns[i] = NewServer(i, peerIds, ready)
+		ns[i] = NewServer(i, peerIds, ready, commitChans[i])
 		ns[i].Serve()
 	}
 

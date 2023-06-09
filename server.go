@@ -20,6 +20,7 @@ type Server struct {
 	rpcServer *rpc.Server
 	listener  net.Listener
 
+	commitChan  chan<- CommitEntry
 	peerClients map[int]*rpc.Client
 
 	ready <-chan interface{}
@@ -27,19 +28,20 @@ type Server struct {
 	wg    sync.WaitGroup
 }
 
-func NewServer(serverId int, peerIds []int, ready <-chan interface{}) *Server {
+func NewServer(serverId int, peerIds []int, ready <-chan interface{}, commitChan chan<- CommitEntry) *Server {
 	s := new(Server)
 	s.serverId = serverId
 	s.peerIds = peerIds
 	s.peerClients = make(map[int]*rpc.Client)
 	s.ready = ready
 	s.quit = make(chan interface{})
+	s.commitChan = commitChan
 	return s
 }
 
 func (s *Server) Serve() {
 	s.mu.Lock()
-	s.cm = NewConsensusModule(s.serverId, s.peerIds, s, s.ready)
+	s.cm = NewConsensusModule(s.serverId, s.peerIds, s, s.ready, s.commitChan)
 
 	s.rpcServer = rpc.NewServer()
 	s.rpcProxy = &RPCProxy{cm: s.cm}
