@@ -174,7 +174,7 @@ func (cm *ConsensusModule) AppendEntries(args AppendEntriesArgs, reply *AppendEn
 }
 
 func (cm *ConsensusModule) electionTimeout() time.Duration {
-	return time.Duration(150+rand.Intn(150)) * time.Millisecond
+	return time.Duration(rand.Intn(ElectionTimeoutMax-ElectionTimeoutMin)+ElectionTimeoutMin) * TimeoutUnit
 }
 
 func (cm *ConsensusModule) isLeader() bool {
@@ -308,7 +308,7 @@ func (cm *ConsensusModule) startLeader() {
 	cm.debug("becomes Leader (term=%d, nextIndex=%v, matchIndex=%v), (log=%v)", cm.currentTerm, cm.nextIndex, cm.matchIndex, cm.log)
 
 	go func() {
-		ticker := time.NewTicker(50 * time.Millisecond)
+		ticker := cm.NewHeartbeatTicker()
 		defer ticker.Stop()
 
 		for {
@@ -323,6 +323,10 @@ func (cm *ConsensusModule) startLeader() {
 			cm.mu.Unlock()
 		}
 	}()
+}
+
+func (cm *ConsensusModule) NewHeartbeatTicker() *time.Ticker {
+	return time.NewTicker(HeartbeatTimeout * TimeoutUnit)
 }
 
 func (cm *ConsensusModule) leaderHeartbeats() {

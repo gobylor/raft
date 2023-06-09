@@ -1,5 +1,14 @@
 package raft
 
+import "time"
+
+const (
+	TimeoutUnit        = time.Millisecond
+	HeartbeatTimeout   = 50
+	ElectionTimeoutMin = 150
+	ElectionTimeoutMax = 300
+)
+
 type CMState int
 
 const (
