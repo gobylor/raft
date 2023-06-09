@@ -3,6 +3,7 @@ package raft
 import (
 	"log"
 	"math/rand"
+	"sync"
 	"testing"
 	"time"
 )
@@ -13,8 +14,20 @@ func init() {
 }
 
 type Harness struct {
+	mu sync.Mutex
+
 	// cluster is a list of all the raft servers participating in a cluster.
 	cluster []*Server
+	storage []*MapStorage
+
+	// commitChans has a channel per server in cluster with the commi channel for
+	// that server.
+	commitChans []chan CommitEntry
+
+	// commits at index i holds the sequence of commits made by server i so far.
+	// It is populated by goroutines that listen on the corresponding commitChans
+	// channel.
+	commits [][]CommitEntry
 
 	// connected has a bool per server in cluster, specifying whether this server
 	// is currently connected to peers (if false, it's partitioned and no messages
@@ -32,6 +45,8 @@ func NewHarness(t *testing.T, n int) *Harness {
 	connected := make([]bool, n)
 	ready := make(chan interface{})
 	commitChans := make([]chan CommitEntry, n)
+	storages := make([]*MapStorage, n)
+	commits := make([][]CommitEntry, n)
 
 	// Create all Servers in this cluster, assign ids and peer ids.
 	for i := 0; i < n; i++ {
@@ -42,7 +57,9 @@ func NewHarness(t *testing.T, n int) *Harness {
 			}
 		}
 
-		ns[i] = NewServer(i, peerIds, ready, commitChans[i])
+		storages[i] = NewMapStorage()
+		commitChans[i] = make(chan CommitEntry)
+		ns[i] = NewServer(i, peerIds, storages[i], ready, commitChans[i])
 		ns[i].Serve()
 	}
 
@@ -57,12 +74,20 @@ func NewHarness(t *testing.T, n int) *Harness {
 	}
 	close(ready)
 
-	return &Harness{
-		cluster:   ns,
-		connected: connected,
-		n:         n,
-		t:         t,
+	h := &Harness{
+		cluster:     ns,
+		storage:     storages,
+		commitChans: commitChans,
+		commits:     commits,
+		connected:   connected,
+		n:           n,
+		t:           t,
 	}
+
+	for i := 0; i < n; i++ {
+		go h.collectCommits(i)
+	}
+	return h
 }
 
 func (h *Harness) Shutdown() {
@@ -100,4 +125,18 @@ func (h *Harness) CheckSingleLeader() (int, int) {
 
 	h.t.Fatalf("leader not found")
 	return -1, -1
+}
+
+func (h *Harness) collectCommits(i int) {
+	for c := range h.commitChans[i] {
+		h.mu.Lock()
+		tlog("collectCommits(%d) got %+v", i, c)
+		h.commits[i] = append(h.commits[i], c)
+		h.mu.Unlock()
+	}
+}
+
+func tlog(format string, a ...interface{}) {
+	format = "[TEST] " + format
+	log.Printf(format, a...)
 }

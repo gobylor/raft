@@ -1,5 +1,11 @@
 package raft
 
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
 type RPCProxy struct {
 	cm *ConsensusModule
 }
@@ -17,6 +23,18 @@ type RequestVoteReply struct {
 }
 
 func (p *RPCProxy) RequestVote(args RequestVoteArgs, reply *RequestVoteReply) error {
+	f := rand.Float32()
+	if f < MockUnreliableRpcFailureRate {
+		p.cm.debug("drop RequestVote")
+		return fmt.Errorf("RPC failed")
+	}
+	if f < MockUnreliableRpcDelayRate {
+		p.cm.debug("delay RequestVote")
+		time.Sleep(time.Duration(MockUnreliableRpcDelayMin+rand.Intn(MockUnreliableRpcDelayMax-MockUnreliableRpcDelayMin)) * TimeoutUnit)
+	} else {
+		time.Sleep(time.Duration(MockUnreliableRpcLatencyMin+rand.Intn(MockUnreliableRpcLatencyMax-MockUnreliableRpcLatencyMin)) * TimeoutUnit)
+	}
+
 	return p.cm.RequestVote(args, reply)
 }
 
@@ -30,10 +48,23 @@ type AppendEntriesArgs struct {
 }
 
 type AppendEntriesReply struct {
-	Term    int
-	Success bool
+	Term          int
+	Success       bool
+	ConflictIndex int
+	ConflictTerm  int
 }
 
 func (p *RPCProxy) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply) error {
+	f := rand.Float32()
+	if f < MockUnreliableRpcFailureRate {
+		p.cm.debug("drop RequestVote")
+		return fmt.Errorf("RPC failed")
+	}
+	if f < MockUnreliableRpcDelayRate {
+		p.cm.debug("delay RequestVote")
+		time.Sleep(time.Duration(MockUnreliableRpcDelayMin+rand.Intn(MockUnreliableRpcDelayMax-MockUnreliableRpcDelayMin)) * TimeoutUnit)
+	} else {
+		time.Sleep(time.Duration(MockUnreliableRpcLatencyMin+rand.Intn(MockUnreliableRpcLatencyMax-MockUnreliableRpcLatencyMin)) * TimeoutUnit)
+	}
 	return p.cm.AppendEntries(args, reply)
 }
