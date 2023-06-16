@@ -24,10 +24,13 @@ type RequestVoteReply struct {
 
 func (p *RPCProxy) RequestVote(args RequestVoteArgs, reply *RequestVoteReply) error {
 	f := rand.Float32()
+	// 模拟 rpc 请求失败
 	if f < MockUnreliableRpcFailureRate {
 		p.cm.debug("drop RequestVote")
+		time.Sleep(time.Duration(MockUnreliableRpcFailureDuration) * TimeoutUnit)
 		return fmt.Errorf("RPC failed")
 	}
+	// 模拟网络延迟
 	if f < MockUnreliableRpcDelayRate {
 		p.cm.debug("delay RequestVote")
 		time.Sleep(time.Duration(MockUnreliableRpcDelayMin+rand.Intn(MockUnreliableRpcDelayMax-MockUnreliableRpcDelayMin)) * TimeoutUnit)
@@ -56,10 +59,13 @@ type AppendEntriesReply struct {
 
 func (p *RPCProxy) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply) error {
 	f := rand.Float32()
+	// 模拟 rpc 请求失败
 	if f < MockUnreliableRpcFailureRate {
 		p.cm.debug("drop RequestVote")
+		time.Sleep(time.Duration(MockUnreliableRpcFailureDuration) * TimeoutUnit)
 		return fmt.Errorf("RPC failed")
 	}
+	// 模拟网络延迟
 	if f < MockUnreliableRpcDelayRate {
 		p.cm.debug("delay RequestVote")
 		time.Sleep(time.Duration(MockUnreliableRpcDelayMin+rand.Intn(MockUnreliableRpcDelayMax-MockUnreliableRpcDelayMin)) * TimeoutUnit)

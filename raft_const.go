@@ -3,19 +3,20 @@ package raft
 import "time"
 
 const (
-	TimeoutUnit                 = time.Millisecond
-	HeartbeatTimeout            = 50
-	ElectionTimeoutMin          = 150
-	ElectionTimeoutMax          = 300
-	MockUnreliableRpcDelayMin   = 60
-	MockUnreliableRpcDelayMax   = 70
-	MockUnreliableRpcLatencyMin = 10
-	MockUnreliableRpcLatencyMax = 15
+	TimeoutUnit                      = time.Millisecond
+	HeartbeatTimeout                 = 50
+	ElectionTimeoutMin               = 150
+	ElectionTimeoutMax               = 300
+	MockUnreliableRpcFailureDuration = 120
+	MockUnreliableRpcDelayMin        = 60
+	MockUnreliableRpcDelayMax        = 70
+	MockUnreliableRpcLatencyMin      = 1
+	MockUnreliableRpcLatencyMax      = 5
 )
 
 const (
 	MockUnreliableRpcFailureRate = 0.1
-	MockUnreliableRpcDelayRate   = 0.2
+	MockUnreliableRpcDelayRate   = (1 - MockUnreliableRpcFailureRate) * 0.2
 )
 
 type CMState int
